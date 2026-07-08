@@ -16,6 +16,7 @@ import type { OpenAgentState, StateTracker } from './stateTracker.ts';
 function candidateForOpenState(open: OpenAgentState, now: Date): EvaluationCandidate {
   const durationSec = (now.getTime() - open.since.getTime()) / 1000;
   return {
+    eventId: open.eventId,
     field: 'agent_state_duration_sec',
     value: durationSec,
     entityType: 'agent',

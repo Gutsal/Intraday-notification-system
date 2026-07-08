@@ -70,6 +70,7 @@ describe('rule engine — real sustained-condition sequences', () => {
 
     const makeCandidate = (ts: Date) =>
       candidateForAdherenceCheck({
+        eventId: 'evt_test',
         agentId: 'a_19',
         inViolation: true,
         violationStartedAt,
@@ -114,6 +115,7 @@ describe('rule engine — real sustained-condition sequences', () => {
     const dedup = new Dedup();
     const persistence = new ConditionPersistence();
     const status = {
+      eventId: 'evt_test',
       agentId: 'a_05',
       inViolation: true,
       violationStartedAt: new Date('2026-05-26T09:00:00Z'),

@@ -1,0 +1,56 @@
+.notification-item {
+  display: grid;
+  grid-template-columns: 44px 24px 1fr;
+  align-items: start;
+  position: relative;
+
+  &:not(:last-child) {
+    padding-bottom: var(--space-md);
+  }
+
+  &__time {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-align: right;
+    padding-top: 2px;
+    padding-right: var(--space-sm);
+  }
+
+  &__rail-dot {
+    width: 9px;
+    height: 9px;
+    margin: 5px auto 0;
+    border-radius: 50%;
+    background: var(--color-border-strong);
+    position: relative;
+    z-index: var(--z-row);
+  }
+
+  &__card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  &__header {
+    margin-bottom: var(--space-xs);
+  }
+
+  &__message {
+    margin: 0;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+
+  // Severity tints the rail dot too, not just the badge — never convey
+  // status by the badge's color alone.
+  &:has(.badge--danger) &__rail-dot {
+    background: var(--color-danger);
+  }
+
+  &:has(.badge--warning) &__rail-dot {
+    background: var(--color-warning);
+  }
+}

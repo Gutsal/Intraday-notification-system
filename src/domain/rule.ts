@@ -27,36 +27,42 @@ export const RuleScopeSchema = z
   });
 export type RuleScope = z.infer<typeof RuleScopeSchema>;
 
-export const RuleSchema = z
-  .object({
-    id: z.string(),
-    ownerId: z.string(),
-    recipientId: z.string(),
-    scope: RuleScopeSchema,
-    field: ConditionFieldSchema,
-    // Only meaningful when field === 'agent_state_duration_sec'. The spec's
-    // seed rule ("on a call over 45 min") needs to restrict which open
-    // agent state the duration measures — without this, the field would
-    // fire on any sustained state (available/on_break/offline included),
-    // conflating unrelated signals under one rule. Not part of the spec's
-    // literal Rule interface; added deliberately to make that rule
-    // expressible. See CLAUDE.md/README for the note on this addition.
-    stateFilter: z.string().optional(),
-    operator: OperatorSchema,
-    threshold: z.number(),
-    minDurationSec: z.number().nonnegative().optional(),
-    cooldownSec: z.number().nonnegative(),
-    severity: SeveritySchema,
-    enabled: z.boolean(),
-  })
-  .refine((rule) => rule.field === 'agent_state_duration_sec' || rule.stateFilter === undefined, {
+// Zod v4 disallows .omit() on a schema that already has .refine() applied,
+// so the shape is defined once as a plain object schema and the
+// stateFilter refinement is layered on separately for both the full Rule
+// (with id) and the create/edit input (without id) — see RuleInputSchema
+// below, which backs both POST /rules and PATCH /rules/:id.
+const RuleShapeSchema = z.object({
+  id: z.string(),
+  ownerId: z.string(),
+  recipientId: z.string(),
+  scope: RuleScopeSchema,
+  field: ConditionFieldSchema,
+  // Only meaningful when field === 'agent_state_duration_sec'. The spec's
+  // seed rule ("on a call over 45 min") needs to restrict which open
+  // agent state the duration measures — without this, the field would
+  // fire on any sustained state (available/on_break/offline included),
+  // conflating unrelated signals under one rule. Not part of the spec's
+  // literal Rule interface; added deliberately to make that rule
+  // expressible. See CLAUDE.md/README for the note on this addition.
+  stateFilter: z.string().optional(),
+  operator: OperatorSchema,
+  threshold: z.number(),
+  minDurationSec: z.number().nonnegative().optional(),
+  cooldownSec: z.number().nonnegative(),
+  severity: SeveritySchema,
+  enabled: z.boolean(),
+});
+
+function refineStateFilter<T extends z.ZodType<{ field: ConditionField; stateFilter?: string }>>(schema: T) {
+  return schema.refine((rule) => rule.field === 'agent_state_duration_sec' || rule.stateFilter === undefined, {
     message: 'stateFilter is only valid when field is agent_state_duration_sec',
     path: ['stateFilter'],
   });
+}
+
+export const RuleSchema = refineStateFilter(RuleShapeSchema);
 export type Rule = z.infer<typeof RuleSchema>;
 
-// Same shape backs both POST /rules (create) and PATCH /rules/:id (full
-// edit) — the RuleEditor form always submits the complete rule body, per the
-// spec's "no separate narrow toggle endpoint" decision.
-export const RuleInputSchema = RuleSchema.omit({ id: true });
+export const RuleInputSchema = refineStateFilter(RuleShapeSchema.omit({ id: true }));
 export type RuleInput = z.infer<typeof RuleInputSchema>;

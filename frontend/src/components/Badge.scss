@@ -1,0 +1,31 @@
+// No @use here: this file only consumes CSS custom properties (var(--...)),
+// which are globally available at runtime once styles/tokens.scss is
+// imported once in index.scss — no SCSS-level import needed per file.
+.badge {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-badge);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+
+  &--danger {
+    background: var(--color-danger-bg);
+    color: var(--color-danger-text);
+  }
+
+  &--warning {
+    background: var(--color-warning-bg);
+    color: var(--color-warning-text);
+  }
+
+  &--healthy {
+    background: var(--color-healthy-bg);
+    color: var(--color-healthy-text);
+  }
+
+  &--neutral {
+    background: var(--color-border);
+    color: var(--color-text-secondary);
+  }
+}

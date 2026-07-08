@@ -1,0 +1,57 @@
+@use '../../styles/breakpoints' as *;
+
+.notification-feed {
+  background: var(--color-bg);
+  padding: var(--space-md);
+
+  @include tablet-up {
+    padding: var(--space-lg);
+  }
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+  }
+
+  &__title {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  &__count {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
+  &__state {
+    font-size: 13px;
+    color: var(--color-text-muted);
+
+    &--error {
+      color: var(--color-danger-text);
+    }
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+
+    // The vertical rail line, aligned to the dot column's center
+    // (44px time column + 12px = center of the 24px rail column).
+    &::before {
+      content: '';
+      position: absolute;
+      left: 56px;
+      top: 6px;
+      bottom: 6px;
+      width: 1px;
+      background: var(--color-border-strong);
+    }
+  }
+}

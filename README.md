@@ -1,11 +1,5 @@
 # Intraday Notification System (Assembled take-home)
 
-**Status:** the rule-evaluation engine (domain types, state tracker, dedup,
-scheduler, replay ingestion) is built and proven against the real sample
-data. The API layer and React UI are not built yet — see "How to run it"
-below for what actually works right now. This README will be updated as
-those land.
-
 ## 1. Audience & scope decision
 
 The primary audience is the **team lead**: they own multiple queues and
@@ -53,13 +47,26 @@ delivery/stubChannel.ts (console log + in-memory array — no real
 Slack/email/push; that's stubbed intentionally, see Out of scope)
       │
       ▼
-Notification { recipientId, severity, message, context }
+NotificationsService (in-memory) ◄── RulesService (in-memory, seeded from
+      │                                domain/seedRules.ts, mutated via
+      ▼                                POST/PATCH /rules)
+GET /notifications?recipientId=   GET/POST /rules, PATCH /rules/:id
+      │                                  │
+      └──────────────┬───────────────────┘
+                      ▼
+         frontend/ (Vite/React, polls both endpoints)
+         ViewingAsSwitcher → NotificationFeed + RuleList
 ```
 
 `ruleEngine.evaluate()` is the single function both triggers funnel through
 — an incoming `queue_snapshot`/`adherence_check`/`agent_state_change` event
 and a scheduler tick both just produce an `EvaluationCandidate`, so there's
 one matching/dedup/persistence code path, not two.
+
+`POST /replay` (and an automatic run at server boot) re-runs the full event
+stream fresh against whatever rules currently exist in `RulesService` — so
+editing or disabling a rule and re-triggering replay reflects that change
+rather than reusing stale engine state from a previous run.
 
 ## 3. The event-driven vs. scheduled-evaluation tradeoff
 
@@ -135,8 +142,13 @@ interface Rule {
 
 Derived fields (`sla_margin_sec`, `tickets_waiting`, duration fields) are
 computed once by `stateTracker.ts` from raw event data and never
-recomputed elsewhere — the frontend (once built) will render
-`Notification.severity` etc. as-is rather than re-deriving them client-side.
+recomputed elsewhere — the frontend renders `Notification.severity` etc.
+as-is rather than re-deriving them client-side. Frontend types
+(`frontend/src/domain/`) mirror these rather than importing them directly:
+the repo isn't set up as an npm workspace (root is the backend package
+itself, not a peer of `frontend/`), so cross-package imports would need a
+restructure the spec doesn't otherwise call for. Stated tradeoff, not an
+oversight.
 
 ## 5. What's tested and why
 
@@ -154,11 +166,19 @@ recomputed elsewhere — the frontend (once built) will render
   `a_23` edge case from the sample data, handled defensively (falls back to
   the check's own timestamp as the best-known violation start) rather than
   assumed away.
-- **Deliberately not yet covered**: exhaustive CRUD/API tests, UI
-  snapshot/visual tests, and real delivery-channel integration — none of
-  these exist yet since the API/UI aren't built, but they're the same
-  categories called out as intentionally skipped once those layers exist
-  (see `.claude/skills/testing-strategy/SKILL.md`).
+- **RuleEditor's conditional-field logic** — `ruleFormReducer.test.ts`
+  covers the real logic (not presentation): switching scope type resets an
+  invalid field selection, switching to a duration field forces
+  `minDurationSec` off, and `buildRuleInput` produces the right `scope`
+  shape for each of "a queue" / "my agents" / "myself." This is a pure
+  reducer, so it's covered directly with Vitest rather than needing React
+  Testing Library for this part.
+- **Deliberately skipped**: exhaustive CRUD/API endpoint tests, UI
+  snapshot/visual-regression tests, and real delivery-channel integration
+  tests. Lower-signal for what's being graded here — the API routes are
+  thin parse-validate-delegate wrappers over already-tested services, and
+  pixel/appearance testing wasn't worth the time relative to the engine
+  work above.
 
 ## 6. AI usage note
 
@@ -176,17 +196,32 @@ not a single unreviewed generation pass:
   to its preceding `available` state. Both were flagged to me explicitly
   before proceeding, not silently resolved.
 - Claude Code wrote the domain Zod schemas, state tracker, dedup, rule
-  engine, scheduler, replay ingestion, and the full test suite.
-- Verification wasn't "it compiled": ran the test suite (12/12 passing) and
-  the actual replay against `events.jsonl`, and read the fired-notification
-  log line by line against the expected seed-rule behavior (correct
-  cooldown spacing on the sustained breach/violation, scheduler catching
-  `a_11`/`a_07`/`a_31` mid-call). One test (`ruleEngine.test.ts`'s cooldown
-  test) initially failed — traced it to the test fixture's own timestamp
-  math being wrong (60s elapsed vs. a 600s threshold), not an engine bug,
-  fixed and re-verified.
-- `git init` and dependency installs were run by hand, not by Claude Code,
-  per my preference to keep those steps in my own hands.
+  engine, scheduler, replay ingestion, the Express API layer, and the full
+  React frontend (identity/notifications/rules features, SCSS styling per
+  the design mockups' structure, translated to this project's own tokens).
+- Verification wasn't "it compiled": ran the backend test suite (12/12) and
+  the actual replay against `events.jsonl`, read the fired-notification log
+  line by line against expected seed-rule behavior, then curl'd every API
+  route by hand (including the 400 case for a missing `ownerId`/`recipientId`
+  query param) before touching the frontend. Once the UI was built, drove it
+  with a headless-Chromium Playwright script — not just `tsc`/lint passing —
+  switching identities, opening the RuleEditor, and switching scope type to
+  confirm the conditional-field logic actually re-renders correctly, then
+  checked the console for errors. Screenshots from that run are what caught
+  that the conditional logic worked as designed rather than just compiling.
+- One test (`ruleEngine.test.ts`'s cooldown test) initially failed — traced
+  it to the test fixture's own timestamp math being wrong (60s elapsed vs.
+  a 600s threshold), not an engine bug, fixed and re-verified. Separately,
+  Zod v4 rejected `.omit()` on the already-`.refine()`d `Rule` schema at
+  server startup — restructured into a base shape schema with the
+  refinement layered on both the full and input schemas afterward. Also hit
+  a CORS failure from running two frontend dev-server instances at once
+  (Vite auto-bumped to a second port when 5173 was already taken) — the
+  backend's CORS was hardcoded to one port; changed it to match any
+  `http://localhost:<port>` origin, which is the actual dev-only intent.
+- `git init` and all dependency installs (`npm install`, Playwright browser
+  binaries) were run by hand, not by Claude Code, per my preference to keep
+  those steps in my own hands.
 
 ## 7. What I'd build next
 
@@ -202,14 +237,34 @@ not a single unreviewed generation pass:
 
 ## 8. How to run it
 
-**Backend engine + tests + replay (built now):**
-
 ```
+# Backend (from repo root) — installs, runs tests, replays events.jsonl
+# once at boot, then serves the API on :3001
 npm install
 npm test
-npm run replay
+npm run dev
+
+# Frontend (separate terminal, from repo root)
+cd frontend
+npm install
+npm test
+npm run dev   # serves on :5173
 ```
 
-**Not built yet** (API layer and frontend): `npm run dev` (backend server)
-and the frontend's `cd frontend && npm run dev` aren't available until
-those layers exist. This section will be filled in once they are.
+Open `http://localhost:5173` — the notification feed and rules are seeded
+immediately from the backend's boot-time replay. Creating or editing a rule
+does **not** retroactively re-fire it: the feed shows the *last* replay
+run's output, so click **"Replay sample data"** (top of the notification
+feed) after changing a rule to see its effect. That button is explicitly a
+demo affordance, not a stand-in for a real product action — see the note
+below.
+
+**Why replay is a button and not automatic.** This system has no live event
+stream, just the fixed `data/events.jsonl` sample, so "see this new rule
+fire" requires re-processing that fixed history — closer to a backfill job
+than anything a real user would do. In production there'd be nothing to
+click: a new/edited rule just starts evaluating the live stream and any
+currently-open agent states from that point forward, the same way the
+scheduler already sweeps open states independent of new events arriving
+(see §3). The button is labeled and captioned accordingly rather than
+implying "replay" is a normal step in editing a rule.

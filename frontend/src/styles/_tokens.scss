@@ -1,0 +1,51 @@
+// Design tokens as CSS custom properties (not SCSS variables) — inspectable
+// at runtime, consumable from JS if ever needed. A cool, quiet neutral
+// surface with three semantic status colors (matching Assembled's own
+// Realtime Analysis Thresholds vocabulary) plus one accent reserved for
+// interactive elements only — a monitoring tool, not a marketing page.
+:root {
+  // Neutrals
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-border: #e1e4e8;
+  --color-border-strong: #c8cdd3;
+  --color-text-primary: #1b1f23;
+  --color-text-secondary: #5b6470;
+  --color-text-muted: #8a929b;
+
+  // Accent — interactive elements only (buttons, links, focus rings)
+  --color-accent: #2f6fe4;
+  --color-accent-bg: #e8effc;
+
+  // Status — border/icon shade, pale background tint, darker text shade for
+  // AA contrast on that tint.
+  --color-danger: #d23c3c;
+  --color-danger-bg: #fbeaea;
+  --color-danger-text: #8c1f1f;
+
+  --color-warning: #c67c1d;
+  --color-warning-bg: #fcf0dc;
+  --color-warning-text: #7a4c0e;
+
+  --color-healthy: #2e8b4f;
+  --color-healthy-bg: #e7f4ec;
+  --color-healthy-text: #1d5c34;
+
+  // Spacing / radius
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --radius-card: 0.5rem;
+  --radius-badge: 0.25rem;
+
+  // Elevation / stacking — named scale, not arbitrary numbers.
+  --shadow-hover: 0 2px 8px rgba(27, 31, 35, 0.08);
+  --shadow-panel: -4px 0 16px rgba(27, 31, 35, 0.12);
+  --z-row: 10;
+  --z-toast: 50;
+  --z-panel: 100;
+
+  --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
+}

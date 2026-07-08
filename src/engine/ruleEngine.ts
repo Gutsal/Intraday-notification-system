@@ -12,6 +12,7 @@ import type { AgentStateChange } from '../domain/events.ts';
 // evaluate() function serve both triggers instead of duplicating matching
 // logic per event type.
 export interface EvaluationCandidate {
+  eventId: string;
   field: Rule['field'];
   value: number;
   entityType: 'queue' | 'agent';
@@ -61,7 +62,7 @@ function matchesField(rule: Rule, candidate: EvaluationCandidate): boolean {
 function buildMessage(rule: Rule, candidate: EvaluationCandidate): string {
   const subject = candidate.entityType === 'queue' ? `queue ${candidate.entityId}` : `agent ${candidate.entityId}`;
   const stateNote = candidate.stateFilter ? ` while ${candidate.stateFilter}` : '';
-  return `${subject}: ${rule.field}${stateNote} ${rule.operator} ${rule.threshold} (currently ${candidate.value.toFixed(1)})`;
+  return `${candidate.eventId}: ${subject}: ${rule.field}${stateNote} ${rule.operator} ${rule.threshold} (currently ${candidate.value.toFixed(1)})`;
 }
 
 // Persistence gate for minDurationSec: "for more than N minutes" gates
@@ -137,6 +138,7 @@ export function evaluate(
 
 export function candidatesForQueueSnapshot(metrics: QueueMetrics): EvaluationCandidate[] {
   const base = {
+    eventId: metrics.eventId,
     entityType: 'queue' as const,
     entityId: metrics.queueId,
     queueIds: [metrics.queueId],
@@ -163,6 +165,7 @@ export function candidateForAdherenceCheck(status: AdherenceStatus): EvaluationC
     ? (status.ts.getTime() - status.violationStartedAt.getTime()) / 1000
     : 0;
   return {
+    eventId: status.eventId,
     field: 'adherence_violation_duration_sec',
     value: durationSec,
     entityType: 'agent',
@@ -176,6 +179,7 @@ export function candidateForAdherenceCheck(status: AdherenceStatus): EvaluationC
 export function candidateForClosedAgentState(event: AgentStateChange): EvaluationCandidate | undefined {
   if (event.previous_state === null || event.previous_state_duration_sec === null) return undefined;
   return {
+    eventId: event.event_id,
     field: 'agent_state_duration_sec',
     value: event.previous_state_duration_sec,
     entityType: 'agent',

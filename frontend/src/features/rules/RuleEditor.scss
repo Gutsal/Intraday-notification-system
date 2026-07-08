@@ -1,0 +1,86 @@
+// Inline slide-over, not a modal — no dimmed backdrop. Positioned fixed to
+// the viewport edge and separated from the page purely by --shadow-panel.
+.rule-editor {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(360px, 100vw);
+  z-index: var(--z-panel);
+
+  &__panel {
+    height: 100%;
+    overflow-y: auto;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-panel);
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  &__title {
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  &__subtitle {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-top: -var(--space-sm);
+  }
+
+  &__row {
+    display: flex;
+    gap: var(--space-md);
+
+    .rule-editor__field {
+      flex: 1;
+    }
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+
+    label {
+      font-size: 13px;
+      color: var(--color-text-secondary);
+    }
+
+    select,
+    input[type='number'] {
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-badge);
+      border: 1px solid var(--color-border-strong);
+      background: var(--color-surface);
+    }
+  }
+
+  &__static-value {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+
+  &__checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+
+  &__error {
+    font-size: 13px;
+    color: var(--color-danger-text);
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+    margin-top: auto;
+    padding-top: var(--space-md);
+  }
+}

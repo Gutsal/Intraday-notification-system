@@ -1,6 +1,7 @@
 import type { AdherenceCheck, AgentStateChange, QueueSnapshot } from '../domain/events.ts';
 
 export interface OpenAgentState {
+  eventId: string;
   agentId: string;
   state: string;
   since: Date;
@@ -8,6 +9,7 @@ export interface OpenAgentState {
 }
 
 export interface QueueMetrics {
+  eventId: string;
   queueId: string;
   ticketsWaiting: number;
   longestWaitSec: number;
@@ -17,6 +19,7 @@ export interface QueueMetrics {
 }
 
 export interface AdherenceStatus {
+  eventId: string;
   agentId: string;
   inViolation: boolean;
   violationStartedAt: Date | null;
@@ -37,6 +40,7 @@ export class StateTracker {
 
   recordQueueSnapshot(event: QueueSnapshot): QueueMetrics {
     const metrics: QueueMetrics = {
+      eventId: event.event_id,
       queueId: event.queue_id,
       ticketsWaiting: event.tickets_waiting,
       longestWaitSec: event.longest_wait_sec,
@@ -54,6 +58,7 @@ export class StateTracker {
     // new one — closed-state duration rules are evaluated directly off this
     // event by the rule engine, not read back from this table.
     const open: OpenAgentState = {
+      eventId: event.event_id,
       agentId: event.agent_id,
       state: event.new_state,
       since: new Date(event.ts),
@@ -83,6 +88,7 @@ export class StateTracker {
     }
 
     const status: AdherenceStatus = {
+      eventId: event.event_id,
       agentId: event.agent_id,
       inViolation: event.in_violation,
       violationStartedAt,

@@ -1,0 +1,21 @@
+.viewing-as-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+
+  &__label {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+
+  &__select {
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-badge);
+    border: 1px solid var(--color-border-strong);
+    background: var(--color-surface);
+  }
+}
