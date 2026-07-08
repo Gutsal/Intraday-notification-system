@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { Rule, RuleInput } from '../domain/rule.ts';
 
-// In-memory rules store — no persistence, per the take-home's stated scope
-// (see README "What I'd build next"). Route handlers never touch this
-// directly; they parse/validate then call these methods, per api-design
-// SKILL.md's service-layer convention.
+// DEMO: in-memory rules store — no persistence, per the take-home's stated
+// scope (see README "What I'd build next"); everything resets on restart.
+// A production version would swap the Map below for a real database behind
+// this same method signature. Route handlers never touch this directly;
+// they parse/validate then call these methods, per api-design SKILL.md's
+// service-layer convention.
 export class RulesService {
   private readonly rules = new Map<string, Rule>();
 

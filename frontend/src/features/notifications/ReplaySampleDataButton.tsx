@@ -5,7 +5,7 @@ import './ReplaySampleDataButton.scss';
 
 const TOAST_DURATION_MS = 3000;
 
-// Demo-only. This system has no live event stream — just the fixed
+// DEMO: this system has no live event stream — just the fixed
 // data/events.jsonl sample — so there's no way to see a new or edited
 // rule's effect without re-processing that fixed history. That's a
 // backfill-style operation, not something a real product would expose:

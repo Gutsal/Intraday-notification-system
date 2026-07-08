@@ -77,7 +77,7 @@ export async function fetchNotifications(recipientId: string): Promise<Notificat
   return notifications;
 }
 
-// Demo-only: reprocesses the fixed data/events.jsonl sample against
+// DEMO: reprocesses the fixed data/events.jsonl sample against
 // whatever rules exist right now. Stands in for not having a live event
 // stream — see ReplaySampleDataButton.tsx for the full context.
 export function triggerReplay(): Promise<{ notificationCount: number }> {

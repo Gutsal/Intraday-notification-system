@@ -19,6 +19,12 @@ import { Scheduler } from '../engine/scheduler.ts';
 import { SimulatedClock } from '../engine/clock.ts';
 import { StubChannel } from '../delivery/stubChannel.ts';
 
+// DEMO: this whole module stands in for a live event stream (Kafka/webhook
+// consumer) that doesn't exist here — it reads a fixed sample file instead
+// of subscribing to one. A production ingestion module would process each
+// event as it arrives (no buffering/sorting a whole file up front) and
+// drive the same StateTracker/Scheduler/ruleEngine below unchanged; only
+// this file's "where events come from" half is demo-specific.
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_EVENTS_PATH = join(__dirname, '../../data/events.jsonl');
 

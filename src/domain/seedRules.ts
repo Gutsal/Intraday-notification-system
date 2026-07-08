@@ -2,7 +2,11 @@ import type { Rule } from './rule.ts';
 
 const OWNED_QUEUE_IDS = ['billing', 'tier_2', 'vip'];
 
-// Seed rules from the spec's "Seed rules to ship" section, mirroring the
+// DEMO: seed data standing in for rules a team lead/agent would actually
+// create through the UI over time — this file's only job is to seed
+// RulesService (see server.ts) with something to demo on boot. Rules
+// created via the real POST /rules flow don't touch this file at all.
+// Values from the spec's "Seed rules to ship" section, mirroring the
 // prompt's own examples and confirmed real triggers in data/events.jsonl.
 // cooldownSec values for rules 2/3/4 aren't specified in the spec (only
 // rules 1/1b give an explicit 10-min cooldown) — picked 10 min for the

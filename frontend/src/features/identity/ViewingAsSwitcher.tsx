@@ -6,8 +6,10 @@ const ROLE_LABEL: Record<string, string> = {
   agent: 'Agent',
 };
 
-// The entire "login" concept for this no-auth demo — pinned at the top of
-// the page, drives both RuleList and NotificationFeed via ViewingAsContext.
+// DEMO: the entire "login" concept for this no-auth demo — pinned at the
+// top of the page, drives both RuleList and NotificationFeed via
+// ViewingAsContext. A real product would replace this dropdown with an
+// actual signed-in session.
 export function ViewingAsSwitcher() {
   const { identities, currentIdentity, isLoading, setCurrentId } = useViewingAs();
 

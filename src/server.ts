@@ -30,9 +30,11 @@ app.use(express.json());
 const rulesService = new RulesService(SEED_RULES);
 const notificationsService = new NotificationsService();
 
-// Each run replays the full event stream fresh against whatever rules
-// currently exist, so editing/disabling a rule and re-running reflects
-// that change rather than reusing stale engine state.
+// DEMO: replays the fixed sample file fresh against whatever rules
+// currently exist. Standing in for a live stream, where a rule change
+// would just start applying to future events with no "replay" step at
+// all — see ReplaySampleDataButton.tsx on the frontend for the fuller
+// explanation surfaced to whoever's driving the demo.
 function runReplay(): number {
   const events = loadEvents();
   const { notifications } = replay(events, rulesService.listAll());
@@ -44,7 +46,7 @@ app.use('/rules', rulesRouter(rulesService));
 app.use('/notifications', notificationsRouter(notificationsService));
 app.use('/identities', identitiesRouter());
 
-// Optional per the spec — kicks off the events.jsonl replay against
+// DEMO: optional per the spec — kicks off the sample-data replay against
 // current rules. Also run once at boot below so the feed isn't empty the
 // first time the frontend loads.
 app.post('/replay', (_req, res) => {
@@ -52,6 +54,9 @@ app.post('/replay', (_req, res) => {
   res.json(apiSuccess({ notificationCount: count }));
 });
 
+// DEMO: seeds the feed from the fixed sample data on every server start —
+// a production boot sequence wouldn't reprocess history, it would just
+// start consuming the live stream from "now."
 const notificationCount = runReplay();
 console.log(`Seeded ${notificationCount} notification(s) from the initial replay.`);
 

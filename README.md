@@ -1,5 +1,11 @@
 # Intraday Notification System (Assembled take-home)
 
+Code specific to this being a take-home demo rather than production —
+seed data, the file replay standing in for a live event stream, the
+no-auth identity switcher, the stub delivery channel, in-memory storage —
+is marked inline with a `// DEMO:` comment prefix. `grep -rn "// DEMO:"`
+from the repo root finds all of it.
+
 ## 1. Audience & scope decision
 
 The primary audience is the **team lead**: they own multiple queues and

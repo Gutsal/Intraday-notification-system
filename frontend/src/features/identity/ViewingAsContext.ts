@@ -8,8 +8,8 @@ export interface ViewingAsContextValue {
   setCurrentId: (id: string) => void;
 }
 
-// Holds the current "viewing as" recipientId — the entire "login" concept
-// for this no-auth demo. Split into its own context (not a monolithic
-// AppContext) so switching identity only re-renders consumers that
-// actually read it.
+// DEMO: holds the current "viewing as" recipientId — the entire "login"
+// concept for this no-auth demo, standing in for a real session/auth
+// context. Split into its own context (not a monolithic AppContext) so
+// switching identity only re-renders consumers that actually read it.
 export const ViewingAsContext = createContext<ViewingAsContextValue | undefined>(undefined);

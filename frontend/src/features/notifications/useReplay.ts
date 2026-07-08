@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { triggerReplay } from '../../services/apiClient.ts';
 
-// Demo-only affordance: reprocesses the fixed sample events.jsonl from
+// DEMO: reprocesses the fixed sample events.jsonl from
 // scratch against whatever rules currently exist. This system has no live
 // event stream to poll against — in production, a new/edited rule would
 // just start evaluating future events and open agent states on its own,
