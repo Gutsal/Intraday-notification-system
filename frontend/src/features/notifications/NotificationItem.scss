@@ -1,6 +1,7 @@
 .notification-item {
   display: grid;
-  grid-template-columns: 44px 24px 1fr;
+  grid-template-columns: 48px 1fr;
+  gap: var(--space-sm);
   align-items: start;
   position: relative;
 
@@ -8,23 +9,34 @@
     padding-bottom: var(--space-md);
   }
 
-  &__time {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--color-text-muted);
-    text-align: right;
-    padding-top: 2px;
-    padding-right: var(--space-sm);
+  &__rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: var(--z-row);
   }
 
   &__rail-dot {
     width: 9px;
     height: 9px;
-    margin: 5px auto 0;
+    margin-top: 5px;
     border-radius: 50%;
     background: var(--color-border-strong);
-    position: relative;
-    z-index: var(--z-row);
+  }
+
+  &__time {
+    margin-top: 2px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-align: center;
+    // Opaque, matching the page background — the vertical rail line runs
+    // behind this column for the full list height, so this "erases" the
+    // segment behind the time label rather than the line visibly crossing
+    // through the text.
+    background: var(--color-bg);
+    padding: 0 2px;
   }
 
   &__card {

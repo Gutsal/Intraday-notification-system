@@ -19,10 +19,12 @@ function stripEventIdPrefix(message: string): string {
 export function NotificationItem({ notification }: NotificationItemProps) {
   return (
     <li className="notification-item">
-      <div className="notification-item__rail-dot" aria-hidden="true" />
-      <time className="notification-item__time" dateTime={notification.firedAt}>
-        {formatClockTime(notification.firedAt)}
-      </time>
+      <div className="notification-item__rail">
+        <div className="notification-item__rail-dot" aria-hidden="true" />
+        <time className="notification-item__time" dateTime={notification.firedAt}>
+          {formatClockTime(notification.firedAt)}
+        </time>
+      </div>
       <div className="notification-item__card">
         <div className="notification-item__header">
           <Badge tone={notification.severity}>{notification.severity}</Badge>
