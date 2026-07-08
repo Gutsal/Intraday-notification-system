@@ -1,7 +1,6 @@
-import type { Rule } from '../domain/rule.ts';
 import type { Notification } from '../domain/notification.ts';
 import type { Dedup } from './dedup.ts';
-import { evaluate, ConditionPersistence, type EvaluationCandidate } from './ruleEngine.ts';
+import { evaluate, ConditionPersistence, type EvaluationCandidate, type RuleIndex } from './ruleEngine.ts';
 import type { OpenAgentState, StateTracker } from './stateTracker.ts';
 
 // Core design decision (see the spec's "Core design decision" section):
@@ -11,8 +10,9 @@ import type { OpenAgentState, StateTracker } from './stateTracker.ts';
 // event arrives, the call is already over. This sweep re-evaluates every
 // currently *open* agent state against elapsed duration on a fixed cadence,
 // independent of whether any new event arrived. It's a timer sweep over an
-// indexed open-state table, so it generalizes to thousands of agents
-// without scanning event history.
+// indexed open-state table, checked against an indexed rule set (see
+// RuleIndex in ruleEngine.ts) rather than a full rules scan — so it
+// generalizes to thousands of agents/rules without scanning event history.
 function candidateForOpenState(open: OpenAgentState, now: Date): EvaluationCandidate {
   const durationSec = (now.getTime() - open.since.getTime()) / 1000;
   return {
@@ -29,7 +29,7 @@ function candidateForOpenState(open: OpenAgentState, now: Date): EvaluationCandi
 }
 
 export function sweep(
-  rules: Rule[],
+  index: RuleIndex,
   tracker: StateTracker,
   dedup: Dedup,
   persistence: ConditionPersistence,
@@ -38,7 +38,7 @@ export function sweep(
   const notifications: Notification[] = [];
   for (const open of tracker.getAllOpenAgentStates()) {
     const candidate = candidateForOpenState(open, now);
-    notifications.push(...evaluate(rules, candidate, dedup, persistence));
+    notifications.push(...evaluate(index, candidate, dedup, persistence));
   }
   return notifications;
 }
@@ -60,7 +60,7 @@ export class Scheduler {
 
   advanceTo(
     now: Date,
-    rules: Rule[],
+    index: RuleIndex,
     tracker: StateTracker,
     dedup: Dedup,
     persistence: ConditionPersistence,
@@ -69,7 +69,7 @@ export class Scheduler {
     let nextTickMs = this.lastTickAtMs + this.intervalMs;
 
     while (nextTickMs <= now.getTime()) {
-      notifications.push(...sweep(rules, tracker, dedup, persistence, new Date(nextTickMs)));
+      notifications.push(...sweep(index, tracker, dedup, persistence, new Date(nextTickMs)));
       this.lastTickAtMs = nextTickMs;
       nextTickMs += this.intervalMs;
     }

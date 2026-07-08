@@ -1,9 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { StateTracker } from '../src/engine/stateTracker.ts';
 import { Dedup } from '../src/engine/dedup.ts';
-import { ConditionPersistence, evaluate, candidatesForQueueSnapshot, candidateForAdherenceCheck } from '../src/engine/ruleEngine.ts';
+import { ConditionPersistence, RuleIndex, evaluate, candidatesForQueueSnapshot, candidateForAdherenceCheck } from '../src/engine/ruleEngine.ts';
 import { SEED_RULES } from '../src/domain/seedRules.ts';
 import type { QueueSnapshot, AdherenceCheck } from '../src/domain/events.ts';
+
+// Built once — RuleIndex is a read-only view over SEED_RULES, safe to
+// share across tests (evaluate() never mutates it).
+const index = new RuleIndex(SEED_RULES);
 
 // Real billing SLA-breach sequence from data/events.jsonl — six
 // consecutive breaching snapshots, 09:30-10:00.
@@ -35,7 +39,7 @@ describe('rule engine — real sustained-condition sequences', () => {
     for (const snapshot of billingBreachSnapshots) {
       const metrics = tracker.recordQueueSnapshot(snapshot);
       for (const candidate of candidatesForQueueSnapshot(metrics)) {
-        fired.push(...evaluate(SEED_RULES, candidate, dedup, persistence).map((n) => n.ruleId));
+        fired.push(...evaluate(index, candidate, dedup, persistence).map((n) => n.ruleId));
       }
     }
 
@@ -52,7 +56,7 @@ describe('rule engine — real sustained-condition sequences', () => {
 
     for (const check of a19ViolationChecks) {
       const status = tracker.recordAdherenceCheck(check);
-      fired.push(...evaluate(SEED_RULES, candidateForAdherenceCheck(status), dedup, persistence).map((n) => n.ruleId));
+      fired.push(...evaluate(index, candidateForAdherenceCheck(status), dedup, persistence).map((n) => n.ruleId));
     }
 
     const rule3Fires = fired.filter((id) => id === 'rule-3');
@@ -78,15 +82,15 @@ describe('rule engine — real sustained-condition sequences', () => {
         ts,
       });
 
-    const first = evaluate(SEED_RULES, makeCandidate(base), dedup, persistence);
+    const first = evaluate(index, makeCandidate(base), dedup, persistence);
     expect(first.some((n) => n.ruleId === 'rule-3')).toBe(true);
 
     // Still within the 10-min cooldown — suppressed.
-    const within = evaluate(SEED_RULES, makeCandidate(new Date(base.getTime() + 5 * 60_000)), dedup, persistence);
+    const within = evaluate(index, makeCandidate(new Date(base.getTime() + 5 * 60_000)), dedup, persistence);
     expect(within.some((n) => n.ruleId === 'rule-3')).toBe(false);
 
     // Past the cooldown — fires again.
-    const after = evaluate(SEED_RULES, makeCandidate(new Date(base.getTime() + 11 * 60_000)), dedup, persistence);
+    const after = evaluate(index, makeCandidate(new Date(base.getTime() + 11 * 60_000)), dedup, persistence);
     expect(after.some((n) => n.ruleId === 'rule-3')).toBe(true);
   });
 
@@ -123,7 +127,7 @@ describe('rule engine — real sustained-condition sequences', () => {
       ts: new Date('2026-05-26T09:20:00Z'), // 20 min in violation, past rule-3's 10-min threshold
     };
     // rule-3 is scoped to agentIds: ['a_19'] only.
-    const notifications = evaluate(SEED_RULES, candidateForAdherenceCheck(status), dedup, persistence);
+    const notifications = evaluate(index, candidateForAdherenceCheck(status), dedup, persistence);
     expect(notifications.some((n) => n.ruleId === 'rule-3')).toBe(false);
   });
 });

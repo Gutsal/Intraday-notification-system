@@ -10,6 +10,7 @@ import { StateTracker } from '../engine/stateTracker.ts';
 import { Dedup } from '../engine/dedup.ts';
 import {
   ConditionPersistence,
+  RuleIndex,
   evaluate,
   candidatesForQueueSnapshot,
   candidateForAdherenceCheck,
@@ -95,31 +96,34 @@ export function replay(events: Event[], rules: Rule[] = SEED_RULES): ReplayResul
   const dedup = new Dedup();
   const persistence = new ConditionPersistence();
   const scheduler = new Scheduler(clock.now());
+  // Built once per run, not per event/candidate — see RuleIndex in
+  // ruleEngine.ts for why this matters at scale.
+  const index = new RuleIndex(rules);
 
   for (const event of events) {
     clock.set(new Date(event.ts));
 
     // Catch any 30s-cadence scheduler ticks that fall between the previous
     // event and this one, before this event's own effect is processed.
-    deliver(scheduler.advanceTo(clock.now(), rules, tracker, dedup, persistence));
+    deliver(scheduler.advanceTo(clock.now(), index, tracker, dedup, persistence));
 
     switch (event.type) {
       case 'queue_snapshot': {
         const metrics = tracker.recordQueueSnapshot(event);
         for (const candidate of candidatesForQueueSnapshot(metrics)) {
-          deliver(evaluate(rules, candidate, dedup, persistence));
+          deliver(evaluate(index, candidate, dedup, persistence));
         }
         break;
       }
       case 'adherence_check': {
         const status = tracker.recordAdherenceCheck(event);
-        deliver(evaluate(rules, candidateForAdherenceCheck(status), dedup, persistence));
+        deliver(evaluate(index, candidateForAdherenceCheck(status), dedup, persistence));
         break;
       }
       case 'agent_state_change': {
         const closedCandidate = candidateForClosedAgentState(event);
         if (closedCandidate) {
-          deliver(evaluate(rules, closedCandidate, dedup, persistence));
+          deliver(evaluate(index, closedCandidate, dedup, persistence));
         }
         tracker.recordAgentStateChange(event);
         break;

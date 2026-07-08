@@ -23,6 +23,29 @@ export interface EvaluationCandidate {
   context: Record<string, unknown>;
 }
 
+// Rules indexed by field, so evaluate() only checks the rules that could
+// possibly match a given candidate instead of scanning every enabled rule
+// in the system. Built once per rule set (see replay.ts), not per
+// candidate — at scale this turns an O(total rules) scan per event into
+// O(rules watching this specific field), which is the difference between
+// this generalizing to many customers' rules and not.
+export class RuleIndex {
+  private readonly byField = new Map<Rule['field'], Rule[]>();
+
+  constructor(rules: Rule[]) {
+    for (const rule of rules) {
+      if (!rule.enabled) continue;
+      const bucket = this.byField.get(rule.field);
+      if (bucket) bucket.push(rule);
+      else this.byField.set(rule.field, [rule]);
+    }
+  }
+
+  forField(field: Rule['field']): Rule[] {
+    return this.byField.get(field) ?? [];
+  }
+}
+
 function matchesOperator(value: number, operator: Rule['operator'], threshold: number): boolean {
   switch (operator) {
     case '>':
@@ -51,8 +74,9 @@ function matchesScope(rule: Rule, candidate: EvaluationCandidate): boolean {
   return false;
 }
 
+// Field equality is already guaranteed by RuleIndex.forField() — this only
+// narrows further on stateFilter for agent_state_duration_sec rules.
 function matchesField(rule: Rule, candidate: EvaluationCandidate): boolean {
-  if (rule.field !== candidate.field) return false;
   if (rule.field === 'agent_state_duration_sec' && rule.stateFilter) {
     return rule.stateFilter === candidate.stateFilter;
   }
@@ -95,15 +119,14 @@ export class ConditionPersistence {
 }
 
 export function evaluate(
-  rules: Rule[],
+  index: RuleIndex,
   candidate: EvaluationCandidate,
   dedup: Dedup,
   persistence: ConditionPersistence,
 ): Notification[] {
   const notifications: Notification[] = [];
 
-  for (const rule of rules) {
-    if (!rule.enabled) continue;
+  for (const rule of index.forField(candidate.field)) {
     if (!matchesField(rule, candidate)) continue;
     if (!matchesScope(rule, candidate)) continue;
 

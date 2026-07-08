@@ -104,7 +104,11 @@ in progress — see `tests/scheduler.test.ts`.
 
 This also generalizes to "thousands of agents, millions of events/day"
 better than it might look: it's a timer sweep over one indexed table
-(`{agentId, state, since}`), not a scan over event history.
+(`{agentId, state, since}`), checked against a `RuleIndex` keyed by field
+(see `ruleEngine.ts`) rather than a scan over every rule in the system —
+see §9 for the fuller scaling discussion, including what's *not* solved
+yet (there's no tenant-partitioning axis at all, so the indexing helps
+within a single process but doesn't give a horizontal-scaling story).
 
 ## 4. Data model
 
@@ -234,10 +238,20 @@ not a single unreviewed generation pass:
 - Head-of-support digest/aggregation view (explicitly deferred, see §1).
 - Escalation chains (re-route or widen the audience if a notification goes
   unacknowledged).
-- Persistent storage instead of in-memory rules/notifications — fine for a
-  demo, not for a restart-safe production system.
-- Real streaming ingestion (Kafka/webhook-style) instead of a file replay,
-  once there's an actual event source instead of a sample file.
+- A `customerId`/tenant field threaded through `Event`/`Rule`/`Notification`,
+  and `StateTracker`/`RulesService`/`NotificationsService` sharded by it —
+  see §9. This is the actual prerequisite for horizontal scaling; the
+  indexing done so far (§9) helps within one process but doesn't give a
+  multi-process story on its own.
+- Persistent storage instead of in-memory rules/notifications (Redis for
+  hot state/dedup, a real DB for rules/notifications) — fine for a demo,
+  not for a restart-safe production system.
+- Real streaming ingestion (Kafka partitioned by `customerId`) instead of a
+  file replay, once there's an actual event source instead of a sample file.
+- TTL/eviction on `Dedup`/`ConditionPersistence` — both grow forever right
+  now. Not done yet because a short-lived demo replay can't meaningfully
+  exercise or verify an eviction policy; the tenant-sharding item above is
+  also the more pressing gap to close first.
 - Notification preferences beyond on/off — quiet hours, per-severity
   channel routing.
 
@@ -274,3 +288,39 @@ currently-open agent states from that point forward, the same way the
 scheduler already sweeps open states independent of new events arriving
 (see §3). The button is labeled and captioned accordingly rather than
 implying "replay" is a normal step in editing a rule.
+
+## 9. Scaling: what's indexed now vs. what's still a real gap
+
+Asked directly whether this generalizes to "thousands of customers,
+millions of events/day" — honest answer: the module boundaries are sound,
+but two real bottlenecks existed and one structural gap remains.
+
+**Fixed, cheap, no new infra:**
+- `RulesService.list(ownerId)` and `NotificationsService.list(recipientId)`
+  used to be `Array.filter()` over *every* rule/notification in the system
+  on every request. Both are now indexed by owner/recipient
+  (`Map<id, Set/Array>`), so a lookup costs proportional to one identity's
+  own data, not the whole system's.
+- `ruleEngine.evaluate()` used to loop over every enabled rule for every
+  single event/scheduler-tick candidate — O(total rules) per event, and
+  `Scheduler.sweep()` did that for every open agent state, every 30s,
+  across every customer. `RuleIndex` (in `ruleEngine.ts`) now groups rules
+  by `field` once per rule set, so `evaluate()` only scans the rules that
+  could possibly match a given candidate's field. Verified this didn't
+  change behavior by re-running the replay and the full test suite before
+  and after — identical 16 notifications, same messages.
+
+**Still a real gap, deliberately left as a documented next step, not a
+quick fix:** there's no tenant-scoping field anywhere in the domain model.
+`Event`, `Rule`, and `Notification` have no `customerId`, so `StateTracker`,
+`RulesService`, and `NotificationsService` are each one global in-memory
+structure holding every customer's data in a single Node process. The field
+indexing above helps that one process work harder before it falls over, but
+nothing here says "worker N owns customers X–Y," so there's no actual
+horizontal-scaling story — one process is still the ceiling. Closing that
+gap means: add `customerId` to the domain model, shard the three services
+by it (consistent hashing), and move off in-memory Maps to something
+multiple worker processes can share (Redis for hot state/dedup, a real DB
+for rules/notifications). That's a schema change plus new infrastructure,
+not a refactor — worth naming clearly rather than quietly leaving it
+implied by the in-memory-storage caveat elsewhere in this README.

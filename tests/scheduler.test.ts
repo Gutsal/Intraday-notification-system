@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { StateTracker } from '../src/engine/stateTracker.ts';
 import { Dedup } from '../src/engine/dedup.ts';
-import { ConditionPersistence } from '../src/engine/ruleEngine.ts';
+import { ConditionPersistence, RuleIndex } from '../src/engine/ruleEngine.ts';
 import { Scheduler } from '../src/engine/scheduler.ts';
 import { SimulatedClock } from '../src/engine/clock.ts';
 import { SEED_RULES } from '../src/domain/seedRules.ts';
+
+const index = new RuleIndex(SEED_RULES);
 
 // This is the highest-value test in the suite: a naive event-reactive-only
 // engine is silently wrong here, since it would only learn the call was
@@ -33,7 +35,7 @@ describe('scheduler duration sweep', () => {
     // Advance simulated time past the 45-minute threshold WITHOUT a
     // transition-out event ever arriving.
     clock.advance(46 * 60 * 1000);
-    const notifications = scheduler.advanceTo(clock.now(), SEED_RULES, tracker, dedup, persistence);
+    const notifications = scheduler.advanceTo(clock.now(), index, tracker, dedup, persistence);
 
     expect(notifications).toContainEqual(expect.objectContaining({ ruleId: 'rule-2', recipientId: 'lead_1' }));
   });
@@ -57,7 +59,7 @@ describe('scheduler duration sweep', () => {
     });
 
     clock.advance(20 * 60 * 1000); // only 20 minutes in, well under 45
-    const notifications = scheduler.advanceTo(clock.now(), SEED_RULES, tracker, dedup, persistence);
+    const notifications = scheduler.advanceTo(clock.now(), index, tracker, dedup, persistence);
 
     expect(notifications.some((n) => n.ruleId === 'rule-2')).toBe(false);
   });
@@ -86,7 +88,7 @@ describe('scheduler duration sweep', () => {
     // past the threshold relative to the state's `since`.
     const notifications = scheduler.advanceTo(
       new Date(start.getTime() + 46 * 60_000),
-      SEED_RULES,
+      index,
       tracker,
       dedup,
       persistence,
