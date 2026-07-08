@@ -1,0 +1,34 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules/
+design/
+dist/
+build/
+.env
+.env.local
+*.log
+.DS_Store
+coverage/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.claude/*
+CLAUDE.md
+FIRST_PROMPT.md
+intraday-notification-spec.md
+package-lock.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
