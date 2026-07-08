@@ -4,8 +4,8 @@ import type { Dedup } from './dedup.ts';
 import { evaluate, ConditionPersistence, type EvaluationCandidate } from './ruleEngine.ts';
 import type { OpenAgentState, StateTracker } from './stateTracker.ts';
 
-// Core design decision (see CLAUDE.md / spec's "Core design decision"
-// section): agent_state_change fires only on transition, and a state's
+// Core design decision (see the spec's "Core design decision" section):
+// agent_state_change fires only on transition, and a state's
 // duration is only known once it ends. A rule like "on a call over 45 min"
 // can't be caught by reacting to events alone — by the time the transition
 // event arrives, the call is already over. This sweep re-evaluates every

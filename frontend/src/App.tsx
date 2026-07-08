@@ -5,9 +5,8 @@ import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import './App.scss';
 
 // Single page, no router — two sections stacked (NotificationFeed above
-// RuleList), ViewingAsSwitcher pinned at the top. Deliberate per
-// CLAUDE.md's UI architecture decision: a two-view app doesn't need
-// routing overhead.
+// RuleList), ViewingAsSwitcher pinned at the top. Deliberate: a two-view
+// app doesn't need routing overhead.
 function App() {
   return (
     <div className="app">

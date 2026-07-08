@@ -44,7 +44,8 @@ const RuleShapeSchema = z.object({
   // fire on any sustained state (available/on_break/offline included),
   // conflating unrelated signals under one rule. Not part of the spec's
   // literal Rule interface; added deliberately to make that rule
-  // expressible. See CLAUDE.md/README for the note on this addition.
+  // expressible — see README's Data model section for the note on this
+  // addition.
   stateFilter: z.string().optional(),
   operator: OperatorSchema,
   threshold: z.number(),

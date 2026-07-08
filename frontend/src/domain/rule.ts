@@ -1,8 +1,8 @@
 // Mirrors backend/src/domain/rule.ts. Deliberately duplicated rather than
 // imported from the backend package: this repo isn't set up as an npm
-// workspace (root is the backend itself, per CLAUDE.md's documented
-// commands, not a peer package), so a cross-package import would require
-// restructuring that layout. The spec allows this fallback explicitly
+// workspace (root is the backend itself, not a peer package), so a
+// cross-package import would require restructuring that layout. The spec
+// allows this fallback explicitly
 // ("or a shared package if the build setup makes that easy — don't
 // hand-duplicate the type definitions" — it isn't easy here without that
 // restructure, so duplication is the stated tradeoff).
