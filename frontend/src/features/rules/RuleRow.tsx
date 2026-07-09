@@ -1,4 +1,4 @@
-import type { Rule } from '../../domain/rule.ts';
+import { AGENT_STATE_LABELS, CONDITION_FIELD_LABELS, QUEUE_LABELS, type Rule } from '../../domain/rule.ts';
 import { Badge } from '../../components/Badge.tsx';
 import { Button } from '../../components/Button.tsx';
 import { formatDurationSec } from '../../utils/formatDuration.ts';
@@ -12,15 +12,16 @@ interface RuleRowProps {
 
 function scopeLabel(rule: Rule): string {
   if (rule.scope.agentIds?.length) return rule.scope.agentIds.join(', ');
-  if (rule.scope.queueIds?.length === 1) return rule.scope.queueIds[0];
+  if (rule.scope.queueIds?.length === 1) return QUEUE_LABELS[rule.scope.queueIds[0]] ?? rule.scope.queueIds[0];
   if (rule.scope.queueIds?.length) return 'my agents';
   return 'unscoped';
 }
 
 function conditionLabel(rule: Rule): string {
   const value = isDurationField(rule.field) ? formatDurationSec(rule.threshold) : rule.threshold;
-  const stateNote = rule.stateFilter ? ` while ${rule.stateFilter}` : '';
-  return `${rule.field}${stateNote} ${rule.operator} ${value}`;
+  const stateNote = rule.stateFilter ? ` while ${AGENT_STATE_LABELS[rule.stateFilter] ?? rule.stateFilter}` : '';
+  const fieldLabel = CONDITION_FIELD_LABELS[rule.field];
+  return `${fieldLabel}${stateNote} ${rule.operator} ${value}`;
 }
 
 // Pure presentational — one row, no data fetching. Editing (including

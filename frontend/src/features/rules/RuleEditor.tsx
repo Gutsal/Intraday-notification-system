@@ -1,9 +1,11 @@
 import { useReducer } from 'react';
 import {
+  AGENT_STATE_LABELS,
   AGENT_STATE_OPTIONS,
   CONDITION_FIELD_OPTIONS,
   OPERATOR_OPTIONS,
   QUEUE_ID_OPTIONS,
+  QUEUE_LABELS,
   SEVERITY_OPTIONS,
   type Rule,
 } from '../../domain/rule.ts';
@@ -87,7 +89,7 @@ export function RuleEditor({ ownerId, role, rule, onClose }: RuleEditorProps) {
             <select id="queue-id" value={state.queueId} onChange={(e) => dispatch({ type: 'SET_QUEUE_ID', queueId: e.target.value })}>
               {QUEUE_ID_OPTIONS.map((queueId) => (
                 <option key={queueId} value={queueId}>
-                  {queueId}
+                  {QUEUE_LABELS[queueId] ?? queueId}
                 </option>
               ))}
             </select>
@@ -117,7 +119,7 @@ export function RuleEditor({ ownerId, role, rule, onClose }: RuleEditorProps) {
             <select id="state-filter" value={state.stateFilter} onChange={(e) => dispatch({ type: 'SET_STATE_FILTER', stateFilter: e.target.value })}>
               {AGENT_STATE_OPTIONS.map((agentState) => (
                 <option key={agentState} value={agentState}>
-                  {agentState}
+                  {AGENT_STATE_LABELS[agentState] ?? agentState}
                 </option>
               ))}
             </select>

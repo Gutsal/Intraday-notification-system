@@ -38,12 +38,22 @@ export interface Rule {
 
 export type RuleInput = Omit<Rule, 'id'>;
 
-export const CONDITION_FIELD_OPTIONS: { value: ConditionField; label: string }[] = [
-  { value: 'sla_margin_sec', label: 'SLA margin (sec)' },
-  { value: 'tickets_waiting', label: 'Tickets waiting' },
-  { value: 'adherence_violation_duration_sec', label: 'Adherence violation duration (sec)' },
-  { value: 'agent_state_duration_sec', label: 'Agent state duration (sec)' },
-];
+// Mirrors backend/src/domain/rule.ts's label maps (same duplication
+// tradeoff as above) — the frontend needs its own copy since RuleRow and
+// RuleEditor build their UI text directly from Rule data, with no
+// backend round-trip to source a formatted string from (unlike
+// Notification.message, which the backend already labels this same way in
+// ruleEngine.ts's buildMessage()).
+export const CONDITION_FIELD_LABELS: Record<ConditionField, string> = {
+  sla_margin_sec: 'SLA margin',
+  tickets_waiting: 'Tickets waiting',
+  adherence_violation_duration_sec: 'Adherence violation duration',
+  agent_state_duration_sec: 'Agent state duration',
+};
+
+export const CONDITION_FIELD_OPTIONS: { value: ConditionField; label: string }[] = (
+  Object.entries(CONDITION_FIELD_LABELS) as [ConditionField, string][]
+).map(([value, label]) => ({ value, label }));
 
 export const OPERATOR_OPTIONS: { value: Operator; label: string }[] = [
   { value: '>', label: '>' },
@@ -59,6 +69,20 @@ export const SEVERITY_OPTIONS: { value: Severity; label: string }[] = [
 // Real values observed in data/events.jsonl's agent_state_change/adherence_check.
 export const AGENT_STATE_OPTIONS = ['available', 'on_call', 'on_break', 'in_meeting', 'offline'] as const;
 
+export const AGENT_STATE_LABELS: Record<string, string> = {
+  available: 'available',
+  on_call: 'on a call',
+  on_break: 'on break',
+  in_meeting: 'in a meeting',
+  offline: 'offline',
+};
+
 // Hardcoded per the spec: only three queues, fixed by the sample data — a
 // "list queues" endpoint would be pure ceremony at this scope.
 export const QUEUE_ID_OPTIONS = ['billing', 'tier_2', 'vip'] as const;
+
+export const QUEUE_LABELS: Record<string, string> = {
+  billing: 'Billing',
+  tier_2: 'Tier 2',
+  vip: 'VIP',
+};
