@@ -1,4 +1,4 @@
-import { useReducer } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 import {
   AGENT_STATE_LABELS,
   AGENT_STATE_OPTIONS,
@@ -38,12 +38,47 @@ interface RuleEditorProps {
   onClose: () => void;
 }
 
+const FOCUSABLE_SELECTOR = 'select, input, button:not([disabled])';
+
 // Inline slide-over panel (see css-best-practices SKILL.md — --shadow-panel,
 // no dimmed backdrop), not a modal. The same component and reducer handle
 // both create and edit, per the spec's decision to keep one form for both.
 export function RuleEditor({ ownerId, role, rule, onClose }: RuleEditorProps) {
   const [state, dispatch] = useReducer(ruleFormReducer, rule ? formStateFromRule(rule) : defaultFormState(role));
   const { create, update } = useRuleMutations(ownerId);
+  const panelRef = useRef<HTMLFormElement>(null);
+
+  // Slide-over panel, not a modal — but it's still a dialog: focus the
+  // first field on open, close on Escape, and trap Tab within the panel so
+  // keyboard focus can't silently leave into RuleList behind it.
+  useEffect(() => {
+    panelRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusables = panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (!focusables || focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const scopeTypeOptions = scopeTypeOptionsForRole(role);
   const fieldOptions = fieldOptionsForScope(state.scopeType);
@@ -61,8 +96,8 @@ export function RuleEditor({ ownerId, role, rule, onClose }: RuleEditorProps) {
   }
 
   return (
-    <div className="rule-editor" role="dialog" aria-label={rule ? 'Edit rule' : 'New rule'}>
-      <form className="rule-editor__panel" onSubmit={handleSubmit}>
+    <div className="rule-editor" role="dialog" aria-modal="true" aria-label={rule ? 'Edit rule' : 'New rule'}>
+      <form ref={panelRef} className="rule-editor__panel" onSubmit={handleSubmit}>
         <div className="rule-editor__title">{rule ? 'Edit rule' : 'New rule'}</div>
         <div className="rule-editor__subtitle">Notify when a condition holds for a set amount of time</div>
 

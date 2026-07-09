@@ -27,7 +27,7 @@
   &__subtitle {
     font-size: 13px;
     color: var(--color-text-muted);
-    margin-top: -var(--space-sm);
+    margin-top: calc(-1 * var(--space-sm));
   }
 
   &__row {
