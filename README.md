@@ -324,3 +324,53 @@ multiple worker processes can share (Redis for hot state/dedup, a real DB
 for rules/notifications). That's a schema change plus new infrastructure,
 not a refactor — worth naming clearly rather than quietly leaving it
 implied by the in-memory-storage caveat elsewhere in this README.
+
+## 10. Frontend performance at "millions of records"
+
+Asked the same scaling question about the notification feed specifically.
+The honest failure order, worst-first, isn't "React needs virtualization" —
+that's real but it's the *last* domino, not the first:
+
+1. **Network payload.** `GET /notifications` had no pagination — at millions
+   of records that's a multi-GB JSON response, `JSON.parse()`'d
+   synchronously in the browser before React ever sees a row.
+2. **The 5s poll made it worse, not just slow.** It re-fetched the *entire*
+   list every interval, not "what's new."
+3. **React Query's cache held the full array in memory** regardless of what
+   was rendered.
+4. **Only then does unwindowed DOM rendering matter** — `query.data.map(...)`
+   mounting one row per notification with no limit.
+
+Fixed all four, in that order:
+- `NotificationsService.list()` is now keyset-paginated (`limit`/`before`
+  cursor on the last-seen notification id, not offset-based — stays correct
+  even while `replaceAll()` rewrites the underlying array between page
+  fetches). `GET /notifications` returns `{ notifications, nextCursor }`.
+- `useNotificationFeed` switched from `useQuery` to `useInfiniteQuery`
+  (`useNotificationFeed.ts`), fetching 30-notification pages on demand.
+  `maxPages: 10` bounds both the 5s poll's refetch cost and how much stays
+  in memory — older pages are dropped as new ones load, not kept forever.
+- `NotificationFeed` is virtualized with `@tanstack/react-virtual`: only
+  rows near the viewport are ever mounted in the DOM, regardless of how
+  many pages have been loaded. Verified with a Playwright script that
+  force-fed the system 160 notifications (well past one page) and scrolled
+  through all of them — the DOM never held more than ~13 `.notification-item`
+  elements at once, before or after.
+
+This did mean reworking the vertical time-rail line: it used to be one
+continuous `::before` spanning a real `<ul>` of every rendered `<li>`.
+Virtualized rows are absolutely-positioned and only the visible ones exist
+in the DOM, so the line moved onto the *spacer* element sized to
+`virtualizer.getTotalSize()` (which is always fully present, unlike the
+rows inside it) — same visual effect, correct under windowing. List/listitem
+ARIA roles moved the same direction, off `NotificationItem` and onto
+`NotificationFeed`'s row wrapper, since `NotificationItem` is no longer a
+direct `<ul>` child.
+
+Not done, and not pretending otherwise: a genuinely correct live-updates
+story (only fetching notifications *newer* than what's loaded, rather than
+`useInfiniteQuery`'s default of refetching the currently-loaded pages on
+each poll tick) would need a separate `after` cursor and a "N new — click to
+load" affordance, the way Slack/Twitter-style feeds do it. `maxPages`
+bounds the cost well enough for this take-home's data volumes; a real
+high-volume feed would want that instead.

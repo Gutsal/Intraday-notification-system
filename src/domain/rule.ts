@@ -8,6 +8,35 @@ export const ConditionFieldSchema = z.enum([
 ]);
 export type ConditionField = z.infer<typeof ConditionFieldSchema>;
 
+// Human-readable labels for the internal ConditionField vocabulary — used
+// by ruleEngine.ts's buildMessage() so Notification.message reads as
+// prose, not raw snake_case identifiers (the spec calls this field
+// "human-readable" — see domain/notification.ts).
+export const CONDITION_FIELD_LABELS: Record<ConditionField, string> = {
+  sla_margin_sec: 'SLA margin',
+  tickets_waiting: 'Tickets waiting',
+  adherence_violation_duration_sec: 'Adherence violation duration',
+  agent_state_duration_sec: 'Agent state duration',
+};
+
+// Real agent-state values observed in data/events.jsonl — labeled the same
+// way regardless of which rule/context they appear in.
+export const AGENT_STATE_LABELS: Record<string, string> = {
+  available: 'available',
+  on_call: 'on a call',
+  on_break: 'on break',
+  in_meeting: 'in a meeting',
+  offline: 'offline',
+};
+
+// Hardcoded per the spec's queue-picker decision (see seedRules.ts) —
+// display names for the same three fixed queue ids.
+export const QUEUE_LABELS: Record<string, string> = {
+  billing: 'Billing',
+  tier_2: 'Tier 2',
+  vip: 'VIP',
+};
+
 export const OperatorSchema = z.enum(['>', '>=', '=']);
 export type Operator = z.infer<typeof OperatorSchema>;
 

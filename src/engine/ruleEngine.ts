@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Rule } from '../domain/rule.ts';
+import { AGENT_STATE_LABELS, CONDITION_FIELD_LABELS, QUEUE_LABELS, type Rule } from '../domain/rule.ts';
 import type { Notification } from '../domain/notification.ts';
 import type { Dedup } from './dedup.ts';
 import type { AdherenceStatus, QueueMetrics } from './stateTracker.ts';
@@ -84,9 +84,15 @@ function matchesField(rule: Rule, candidate: EvaluationCandidate): boolean {
 }
 
 function buildMessage(rule: Rule, candidate: EvaluationCandidate): string {
-  const subject = candidate.entityType === 'queue' ? `queue ${candidate.entityId}` : `agent ${candidate.entityId}`;
-  const stateNote = candidate.stateFilter ? ` while ${candidate.stateFilter}` : '';
-  return `${candidate.eventId}: ${subject}: ${rule.field}${stateNote} ${rule.operator} ${rule.threshold} (currently ${candidate.value.toFixed(1)})`;
+  const subject =
+    candidate.entityType === 'queue'
+      ? `${QUEUE_LABELS[candidate.entityId] ?? candidate.entityId} queue`
+      : `Agent ${candidate.entityId}`;
+  const stateNote = candidate.stateFilter
+    ? ` while ${AGENT_STATE_LABELS[candidate.stateFilter] ?? candidate.stateFilter}`
+    : '';
+  const fieldLabel = CONDITION_FIELD_LABELS[rule.field];
+  return `${candidate.eventId}: ${subject} - ${fieldLabel}${stateNote} ${rule.operator} ${rule.threshold} (currently ${candidate.value.toFixed(1)})`;
 }
 
 // Persistence gate for minDurationSec: "for more than N minutes" gates

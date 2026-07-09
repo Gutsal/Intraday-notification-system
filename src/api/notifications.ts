@@ -3,12 +3,16 @@ import { z } from 'zod';
 import type { NotificationsService } from '../services/notificationsService.ts';
 import { apiError, apiSuccess } from './response.ts';
 
-const ListNotificationsQuerySchema = z.object({ recipientId: z.string().min(1) });
+const ListNotificationsQuerySchema = z.object({
+  recipientId: z.string().min(1),
+  limit: z.coerce.number().int().positive().optional(),
+  before: z.string().optional(), // opaque cursor: the last notification id from the previous page
+});
 
-// GET /notifications?recipientId= — recent feed, newest first, filtered to
-// the current "viewing as" identity. No pagination: fine at this data
-// volume (a single replay's worth of notifications), would add
-// cursor-based pagination before scaling past a few thousand rows.
+// GET /notifications?recipientId=&limit=&before= — keyset-paginated feed,
+// newest first, filtered to the current "viewing as" identity. Cursor-based
+// rather than offset-based so a page fetch stays correct even if
+// replaceAll() rewrites the underlying data between requests.
 export function notificationsRouter(service: NotificationsService): Router {
   const router = Router();
 
@@ -18,7 +22,8 @@ export function notificationsRouter(service: NotificationsService): Router {
       res.status(400).json(apiError('invalid_request', parsed.error.flatten()));
       return;
     }
-    res.json(apiSuccess({ notifications: service.list(parsed.data.recipientId) }));
+    const { recipientId, limit, before } = parsed.data;
+    res.json(apiSuccess(service.list(recipientId, { limit, before })));
   });
 
   return router;
