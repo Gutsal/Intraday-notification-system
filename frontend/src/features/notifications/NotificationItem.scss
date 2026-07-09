@@ -4,10 +4,12 @@
   gap: var(--space-sm);
   align-items: start;
   position: relative;
-
-  &:not(:last-child) {
-    padding-bottom: var(--space-md);
-  }
+  // Always applied, not just :not(:last-child) — in the virtualized list
+  // each item is isolated inside its own absolutely-positioned row
+  // wrapper (see NotificationFeed.tsx), so there's no reliable "last
+  // sibling among other notification-items" to target from here. A hair
+  // of extra padding after the final visible row is invisible in practice.
+  padding-bottom: var(--space-md);
 
   &__rail {
     display: flex;

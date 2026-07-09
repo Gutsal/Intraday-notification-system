@@ -36,11 +36,24 @@
     }
   }
 
-  &__list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  // max-height, not height — collapses to fit content when there are only
+  // a few notifications (no dead gray space below the last row), and only
+  // caps out (with scrolling) once content actually exceeds the limit.
+  // @tanstack/react-virtual measures whatever the element's real rendered
+  // height ends up being, so this works either way.
+  &__scroll {
+    max-height: min(70vh, 640px);
+    overflow-y: auto;
     position: relative;
+  }
+
+  // Sized to the virtualizer's full (estimated) total height even though
+  // only the rows near the viewport are actually mounted inside it — that's
+  // what makes the vertical rail line below still read as one continuous
+  // line rather than only spanning the currently-mounted rows.
+  &__spacer {
+    position: relative;
+    width: 100%;
 
     // The vertical rail line, aligned to the 48px rail column's center
     // (NotificationItem's dot + time are stacked in that column).
@@ -53,5 +66,12 @@
       width: 1px;
       background: var(--color-border-strong);
     }
+  }
+
+  &__row {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
   }
 }

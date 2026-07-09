@@ -70,11 +70,19 @@ export async function updateRule(id: string, input: RuleInput): Promise<Rule> {
   return rule;
 }
 
-export async function fetchNotifications(recipientId: string): Promise<Notification[]> {
-  const { notifications } = await request<{ notifications: Notification[] }>(
-    `/notifications?recipientId=${encodeURIComponent(recipientId)}`,
-  );
-  return notifications;
+export interface NotificationsPage {
+  notifications: Notification[];
+  nextCursor: string | null;
+}
+
+export async function fetchNotifications(
+  recipientId: string,
+  options: { limit?: number; cursor?: string } = {},
+): Promise<NotificationsPage> {
+  const params = new URLSearchParams({ recipientId });
+  if (options.limit) params.set('limit', String(options.limit));
+  if (options.cursor) params.set('before', options.cursor);
+  return request<NotificationsPage>(`/notifications?${params.toString()}`);
 }
 
 // DEMO: reprocesses the fixed data/events.jsonl sample against

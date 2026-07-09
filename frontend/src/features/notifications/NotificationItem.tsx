@@ -16,9 +16,13 @@ function stripEventIdPrefix(message: string): string {
   return message.replace(/^evt_\S+:\s*/, '');
 }
 
+// Root is a plain div, not <li> — NotificationFeed's virtualized row
+// wrapper carries role="listitem" (see NotificationFeed.tsx), since this
+// component no longer sits directly inside a real <ul> once the list is
+// virtualized.
 export function NotificationItem({ notification }: NotificationItemProps) {
   return (
-    <li className="notification-item">
+    <div className="notification-item">
       <div className="notification-item__rail">
         <div className="notification-item__rail-dot" aria-hidden="true" />
         <time className="notification-item__time" dateTime={notification.firedAt}>
@@ -31,6 +35,6 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         </div>
         <p className="notification-item__message">{stripEventIdPrefix(notification.message)}</p>
       </div>
-    </li>
+    </div>
   );
 }
