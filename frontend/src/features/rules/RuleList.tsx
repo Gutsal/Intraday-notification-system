@@ -46,7 +46,14 @@ export function RuleList() {
         ))}
 
       {editor.mode !== 'closed' && currentIdentity && (
+        // key forces a remount when switching which rule is being edited
+        // (or between create/edit) — RuleEditor's form state comes from
+        // useReducer's *initializer*, which only runs on mount, so without
+        // this key, clicking "Edit" on a different rule while the panel is
+        // already open would reuse the same instance and keep showing the
+        // first rule's stale form state instead of the newly-clicked one.
         <RuleEditor
+          key={editor.mode === 'edit' ? editor.rule.id : 'create'}
           ownerId={currentIdentity.id}
           role={currentIdentity.role}
           rule={editor.mode === 'edit' ? editor.rule : undefined}
